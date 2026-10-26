@@ -8,7 +8,6 @@ import {
   Settings,
   X,
   GraduationCap,
-  Home,
   LogOut,
 } from 'lucide-react';
 
@@ -163,18 +162,6 @@ export default function MobileNavigation({
                     </button>
                   );
                 })}
-
-                {/* Landing Page Link in Drawer */}
-                <button
-                  onClick={() => {
-                    onNavigate('landing');
-                    onCloseDrawer();
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
-                >
-                  <Home className="w-5 h-5 text-slate-400" />
-                  <span>Landing Page</span>
-                </button>
               </nav>
             </div>
 

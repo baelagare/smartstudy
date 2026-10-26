@@ -77,21 +77,8 @@ export default function Header({
           </div>
         </div>
 
-        {/* Right: Actions (Landing shortcut, Theme Toggle & Add Task Button) */}
+        {/* Right: Actions (Theme Toggle & Add Task Button) */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-          {/* Quick link to Landing Page 
-          {onNavigate && (
-            <button
-              type="button"
-              onClick={() => onNavigate('landing')}
-              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold transition"
-              title="View Public Landing Page"
-            >
-              <span>Landing Page</span>
-            </button>
-          )}
-            */}
-
           {/* Theme Toggle */}
           <button
             type="button"
