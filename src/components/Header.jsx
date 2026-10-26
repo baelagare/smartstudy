@@ -16,10 +16,12 @@ import { formatDate } from '../utils/dateUtils';
  */
 export default function Header({
   userName = 'Alex',
+  currentUser = null,
   theme = 'light',
   onToggleTheme,
   onOpenAddTask,
   onOpenMobileMenu,
+  onNavigate,
   activePageTitle = 'Dashboard',
 }) {
   // Compute contextual greeting based on local time
@@ -29,6 +31,9 @@ export default function Header({
     if (hour < 18) return 'Good afternoon';
     return 'Good evening';
   };
+
+  const displayName = currentUser?.name || userName;
+  const displayAvatar = currentUser?.avatarEmoji || '🎓';
 
   const todayFormatted = formatDate(new Date().toISOString(), {
     showWeekday: true,
@@ -51,19 +56,42 @@ export default function Header({
 
           <div className="min-w-0">
             <div className="flex items-center gap-2">
+              <span className="text-xl shrink-0 hidden xs:inline">{displayAvatar}</span>
               <h1 className="text-base sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white truncate">
-                {getGreeting()}, {userName}!
+                {getGreeting()}, {displayName.split(' ')[0]}!
               </h1>
               <span className="hidden sm:inline-block text-lg">👋</span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
-              {todayFormatted} • <span className="text-indigo-600 dark:text-indigo-400">{activePageTitle}</span>
+              {todayFormatted} •{' '}
+              <span className="text-indigo-600 dark:text-indigo-400 font-semibold">
+                {activePageTitle}
+              </span>
+              {currentUser?.major && (
+                <span className="hidden md:inline text-slate-400 dark:text-slate-500">
+                  {' '}
+                  • {currentUser.major}
+                </span>
+              )}
             </p>
           </div>
         </div>
 
-        {/* Right: Actions (Theme Toggle & Add Task Button) */}
+        {/* Right: Actions (Landing shortcut, Theme Toggle & Add Task Button) */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          {/* Quick link to Landing Page 
+          {onNavigate && (
+            <button
+              type="button"
+              onClick={() => onNavigate('landing')}
+              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold transition"
+              title="View Public Landing Page"
+            >
+              <span>Landing Page</span>
+            </button>
+          )}
+            */}
+
           {/* Theme Toggle */}
           <button
             type="button"
@@ -93,6 +121,6 @@ export default function Header({
           </button>
         </div>
       </div>
-    </header>
+    </header >
   );
 }

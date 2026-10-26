@@ -11,32 +11,78 @@ import {
   Shield,
   Save,
   Check,
+  GraduationCap,
+  Sparkles,
+  LogOut,
+  Target,
+  Flame,
 } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog';
+import {
+  PRESET_PROFILES,
+  STUDY_STYLES,
+  UNIVERSITIES,
+  MAJORS,
+} from '../utils/userProfiles';
 
 /**
  * Settings Page
- * Manages user preferences, theme, data resets, and local storage information.
+ * Manages personalized student profile, focus techniques, theme, and data management.
  * HCI Principle: User Control and Freedom & Error Prevention
  */
 export default function Settings({
   userName = 'Alex',
   onUpdateUserName,
+  currentUser = null,
+  onUpdateUserProfile,
+  onLogout,
+  onSwitchProfile,
   theme = 'light',
   onToggleTheme,
   onClearAllTasks,
   onResetDemoData,
   totalTasks = 0,
 }) {
-  const [nameInput, setNameInput] = useState(userName);
+  const [profileForm, setProfileForm] = useState({
+    name: currentUser?.name || userName,
+    university: currentUser?.university || 'UC Berkeley',
+    major: currentUser?.major || 'Computer Science & HCI',
+    year: currentUser?.year || 'Junior (3rd Year)',
+    dailyStudyGoalHours: currentUser?.dailyStudyGoalHours || 3.5,
+    preferredStudyStyle: currentUser?.preferredStudyStyle || 'pomodoro',
+    avatarEmoji: currentUser?.avatarEmoji || '🎓',
+  });
+
   const [showSavedFeedback, setShowSavedFeedback] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-  const handleSaveName = (e) => {
+  const handleSaveProfile = (e) => {
     e.preventDefault();
-    if (nameInput.trim()) {
-      onUpdateUserName(nameInput.trim());
+    if (profileForm.name.trim()) {
+      const chosenStyle = STUDY_STYLES.find(
+        (s) => s.id === profileForm.preferredStudyStyle
+      );
+
+      const updated = {
+        ...(currentUser || {}),
+        name: profileForm.name.trim(),
+        university: profileForm.university,
+        major: profileForm.major,
+        year: profileForm.year,
+        dailyStudyGoalHours: parseFloat(profileForm.dailyStudyGoalHours) || 3.5,
+        preferredStudyStyle: profileForm.preferredStudyStyle,
+        studyStyleLabel: `${chosenStyle?.name || 'Pomodoro'} (${chosenStyle?.workMinutes || 25}/${chosenStyle?.breakMinutes || 5}m)`,
+        avatarEmoji: profileForm.avatarEmoji || '🎓',
+      };
+
+      if (onUpdateUserProfile) {
+        onUpdateUserProfile(updated);
+      }
+      if (onUpdateUserName) {
+        onUpdateUserName(profileForm.name.trim());
+      }
+
       setShowSavedFeedback(true);
       setTimeout(() => setShowSavedFeedback(false), 2500);
     }
@@ -48,66 +94,296 @@ export default function Settings({
       <div>
         <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
           <SettingsIcon className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-          <span>Application Preferences</span>
+          <span>Personalization & Settings</span>
         </h2>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Customize your profile, visual appearance, and local browser storage.
+          Customize your student academic profile, daily study targets, visual appearance, and local storage.
         </p>
       </div>
 
       <div className="space-y-6">
-        {/* 1. Profile Section */}
+        {/* 1. Comprehensive Student Profile & Personalization Section */}
         <section
           className="p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm"
           aria-labelledby="profile-heading"
         >
-          <div className="flex items-center gap-2 mb-4">
-            <User className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-            <h3 id="profile-heading" className="text-base font-bold text-slate-900 dark:text-white">
-              Student Profile
-            </h3>
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">{profileForm.avatarEmoji}</span>
+              <h3 id="profile-heading" className="text-base font-bold text-slate-900 dark:text-white">
+                Personalized Academic Profile
+              </h3>
+            </div>
+            <span className="text-xs text-indigo-600 dark:text-indigo-400 font-semibold px-2.5 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950">
+              Active Profile
+            </span>
           </div>
 
-          <form onSubmit={handleSaveName} className="space-y-4 max-w-md">
-            <div>
-              <label
-                htmlFor="display-name"
-                className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5"
-              >
-                Preferred Display Name
-              </label>
-              <input
-                id="display-name"
-                type="text"
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                placeholder="Alex"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60 text-slate-900 dark:text-white text-sm focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-indigo-500"
-              />
-              <p className="mt-1 text-xs text-slate-400">
-                Used in greetings, reminders, and personalized recommendations.
-              </p>
+          <form onSubmit={handleSaveProfile} className="space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Display Name */}
+              <div>
+                <label
+                  htmlFor="display-name"
+                  className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5"
+                >
+                  Preferred Display Name
+                </label>
+                <input
+                  id="display-name"
+                  type="text"
+                  value={profileForm.name}
+                  onChange={(e) =>
+                    setProfileForm({ ...profileForm, name: e.target.value })
+                  }
+                  placeholder="Alex Rivera"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60 text-slate-900 dark:text-white text-sm focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              {/* Institution / College */}
+              <div>
+                <label
+                  htmlFor="profile-university"
+                  className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5"
+                >
+                  University / College
+                </label>
+                <select
+                  id="profile-university"
+                  value={profileForm.university}
+                  onChange={(e) =>
+                    setProfileForm({ ...profileForm, university: e.target.value })
+                  }
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60 text-slate-900 dark:text-white text-sm focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-indigo-500"
+                >
+                  {UNIVERSITIES.map((u) => (
+                    <option key={u} value={u}>
+                      {u}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Major / Discipline */}
+              <div>
+                <label
+                  htmlFor="profile-major"
+                  className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5"
+                >
+                  Major / Field of Study
+                </label>
+                <select
+                  id="profile-major"
+                  value={profileForm.major}
+                  onChange={(e) =>
+                    setProfileForm({ ...profileForm, major: e.target.value })
+                  }
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60 text-slate-900 dark:text-white text-sm focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-indigo-500"
+                >
+                  {MAJORS.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Academic Year */}
+              <div>
+                <label
+                  htmlFor="profile-year"
+                  className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5"
+                >
+                  Academic Standing
+                </label>
+                <input
+                  id="profile-year"
+                  type="text"
+                  value={profileForm.year}
+                  onChange={(e) =>
+                    setProfileForm({ ...profileForm, year: e.target.value })
+                  }
+                  placeholder="e.g. Junior (3rd Year)"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60 text-slate-900 dark:text-white text-sm focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            {/* Daily Target & Focus Technique */}
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    Daily Study Target
+                  </label>
+                  <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                    {profileForm.dailyStudyGoalHours} Hours / day
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="8"
+                  step="0.5"
+                  value={profileForm.dailyStudyGoalHours}
+                  onChange={(e) =>
+                    setProfileForm({
+                      ...profileForm,
+                      dailyStudyGoalHours: parseFloat(e.target.value),
+                    })
+                  }
+                  className="w-full accent-indigo-600 cursor-pointer"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                  Preferred Focus Interval
+                </label>
+                <select
+                  value={profileForm.preferredStudyStyle}
+                  onChange={(e) =>
+                    setProfileForm({
+                      ...profileForm,
+                      preferredStudyStyle: e.target.value,
+                    })
+                  }
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/60 text-slate-900 dark:text-white text-sm focus:bg-white dark:focus:bg-slate-800 focus:ring-2 focus:ring-indigo-500"
+                >
+                  {STUDY_STYLES.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.workMinutes}/{s.breakMinutes} min)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Avatar Emoji */}
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                Workspace Avatar
+              </label>
+              <div className="flex items-center gap-2">
+                {['🎓', '💻', '🧬', '📈', '🔬', '📚', '⚡', '💡'].map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() =>
+                      setProfileForm({ ...profileForm, avatarEmoji: emoji })
+                    }
+                    className={`w-9 h-9 rounded-xl text-lg flex items-center justify-center border transition ${
+                      profileForm.avatarEmoji === emoji
+                        ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950 scale-110 shadow-sm'
+                        : 'border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
               <button
                 type="submit"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs sm:text-sm shadow-sm transition"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs sm:text-sm shadow-sm transition"
               >
                 <Save className="w-4 h-4" />
-                <span>Save Profile Name</span>
+                <span>Save Profile Changes</span>
               </button>
 
               {showSavedFeedback && (
-                <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium animate-fade-in">
-                  <Check className="w-4 h-4" /> Saved!
+                <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-semibold animate-fade-in">
+                  <Check className="w-4 h-4" /> Changes successfully saved!
                 </span>
               )}
             </div>
           </form>
         </section>
 
-        {/* 2. Appearance Section */}
+        {/* 2. Quick Demo Profile Switcher */}
+        <section
+          className="p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm"
+          aria-labelledby="personas-heading"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <h3 id="personas-heading" className="text-base font-bold text-slate-900 dark:text-white">
+                Preset Student Personas
+              </h3>
+            </div>
+            <span className="text-xs text-slate-400">1-Click Fast Switch</span>
+          </div>
+
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+            Switch between different academic disciplines to test how Acuity adapts to Computer Science, Pre-Med Biology, and Business Finance workflows.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {PRESET_PROFILES.map((p) => {
+              const isCurrent = currentUser?.email === p.email;
+              return (
+                <div
+                  key={p.id}
+                  className={`p-3.5 rounded-xl border transition flex flex-col justify-between ${
+                    isCurrent
+                      ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 shadow-sm'
+                      : 'border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/40 hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <span className="text-2xl">{p.avatarEmoji}</span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                        {p.name}
+                      </p>
+                      <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium truncate">
+                        {p.major}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={isCurrent}
+                    onClick={() => {
+                      if (onSwitchProfile) onSwitchProfile(p);
+                    }}
+                    className={`w-full py-1.5 rounded-lg text-xs font-bold transition mt-2 ${
+                      isCurrent
+                        ? 'bg-indigo-600 text-white cursor-default'
+                        : 'border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    {isCurrent ? 'Active Persona' : 'Switch to ' + p.name.split(' ')[0]}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Sign Out Option */}
+          {onLogout && (
+            <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center">
+              <p className="text-xs text-slate-500">
+                Want to test the Landing page or sign in with another account?
+              </p>
+              <button
+                type="button"
+                onClick={onLogout}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400 text-xs font-semibold hover:bg-rose-100 transition"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sign Out to Landing</span>
+              </button>
+            </div>
+          )}
+        </section>
+
+        {/* 3. Appearance Section */}
         <section
           className="p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm"
           aria-labelledby="appearance-heading"
@@ -149,7 +425,7 @@ export default function Settings({
           </div>
         </section>
 
-        {/* 3. Data Persistence & Storage Information */}
+        {/* 4. Data Persistence & Storage Information */}
         <section
           className="p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm"
           aria-labelledby="storage-heading"
@@ -169,7 +445,7 @@ export default function Settings({
                   Client-Side Local Storage
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  All your academic tasks, preferences, and progress calculations are securely persisted in your web browser's <code>localStorage</code>. No external database or server is required for this prototype.
+                  All your academic tasks, personalized preferences, and progress calculations are securely persisted in your web browser's <code>localStorage</code>.
                 </p>
               </div>
             </div>
@@ -181,7 +457,7 @@ export default function Settings({
                   Privacy-by-Design
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Your academic records and task deadlines never leave this device. Clearing your browser cache or pressing the button below will remove all stored data.
+                  Your academic records, student credentials, and deadlines never leave this device.
                 </p>
               </div>
             </div>

@@ -8,6 +8,8 @@ import {
   Settings,
   X,
   GraduationCap,
+  Home,
+  LogOut,
 } from 'lucide-react';
 
 /**
@@ -23,6 +25,8 @@ export default function MobileNavigation({
   onCloseDrawer,
   pendingCount = 0,
   urgentRecCount = 0,
+  currentUser = null,
+  onLogout,
 }) {
   const bottomBarItems = [
     { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
@@ -38,7 +42,7 @@ export default function MobileNavigation({
     { id: 'planner', label: 'Study Planner', icon: CalendarDays },
     { id: 'recommendations', label: 'Recommendations', icon: Sparkles, badge: urgentRecCount },
     { id: 'progress', label: 'Progress & Insights', icon: TrendingUp },
-    { id: 'settings', label: 'Settings & Data', icon: Settings },
+    { id: 'settings', label: 'Settings & Profile', icon: Settings },
   ];
 
   // Close drawer on Escape
@@ -159,13 +163,54 @@ export default function MobileNavigation({
                     </button>
                   );
                 })}
+
+                {/* Landing Page Link in Drawer */}
+                <button
+                  onClick={() => {
+                    onNavigate('landing');
+                    onCloseDrawer();
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                >
+                  <Home className="w-5 h-5 text-slate-400" />
+                  <span>Landing Page</span>
+                </button>
               </nav>
             </div>
 
-            {/* Drawer Footer */}
-            <div className="pt-6 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-400">
-              <p className="font-semibold text-slate-600 dark:text-slate-300">Acuity v0.1.0</p>
-              <p className="mt-0.5">Plan Smarter. Study Better. Clarity in Focus</p>
+            {/* Drawer Footer with Student Profile & Logout */}
+            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+              {currentUser && (
+                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="text-xl shrink-0">{currentUser.avatarEmoji || '🎓'}</span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                        {currentUser.name}
+                      </p>
+                      <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold truncate">
+                        {currentUser.major}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      onCloseDrawer();
+                      if (onLogout) onLogout();
+                    }}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-white dark:hover:bg-slate-700 transition shrink-0"
+                    title="Log Out"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              <div className="text-[11px] text-slate-400">
+                <p className="font-semibold text-slate-600 dark:text-slate-300">Acuity Study Planner</p>
+                <p className="mt-0.5">HCI Research-Backed Usability</p>
+              </div>
             </div>
           </div>
 

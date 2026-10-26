@@ -29,6 +29,7 @@ import { generateRecommendations } from '../utils/recommendations';
 export default function Dashboard({
   tasks = [],
   userName = 'Alex',
+  currentUser = null,
   onNavigate,
   onOpenAddTask,
   onToggleComplete,
@@ -37,10 +38,11 @@ export default function Dashboard({
   onStatusChange,
   onStartStudy,
 }) {
+  const effectiveName = currentUser?.name || userName;
   const stats = calculateProgressStats(tasks);
   const prioritizedTasks = sortTasks(tasks, 'smart');
   const topActiveTasks = prioritizedTasks.filter((t) => t.status !== 'Completed').slice(0, 4);
-  const recommendations = generateRecommendations(tasks, userName).slice(0, 3);
+  const recommendations = generateRecommendations(tasks, effectiveName).slice(0, 3);
 
   const handleRecommendationAction = (rec) => {
     if (rec.actionType === 'create_task') {
@@ -125,6 +127,22 @@ export default function Dashboard({
             <p className="mt-1 text-sm text-indigo-200 leading-relaxed">
               {stats.encouragingMessage.body}
             </p>
+
+            {currentUser && (
+              <div className="flex flex-wrap items-center gap-2 mt-3 text-xs text-indigo-200">
+                <span className="px-2 py-0.5 rounded-md bg-white/10 font-medium">
+                  🎯 Goal: {currentUser.dailyStudyGoalHours || 3.5}h / day
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-white/10 font-medium">
+                  ⏱️ {currentUser.studyStyleLabel || 'Pomodoro 25/5'}
+                </span>
+                {currentUser.major && (
+                  <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-white/10 font-medium">
+                    📚 {currentUser.major}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Progress Ring / Percentage Display */}

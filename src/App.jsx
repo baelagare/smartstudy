@@ -9,6 +9,8 @@ import StudyTimerModal from './components/StudyTimerModal';
 import Toast from './components/Toast';
 
 // Pages
+import Landing from './pages/Landing';
+import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Tasks from './pages/Tasks';
 import Planner from './pages/Planner';
@@ -16,18 +18,56 @@ import Recommendations from './pages/Recommendations';
 import Progress from './pages/Progress';
 import Settings from './pages/Settings';
 
-// Helpers
+// Helpers & Profile Utilities
 import { getDaysRemaining } from './utils/dateUtils';
+import { DEFAULT_USER, PRESET_PROFILES } from './utils/userProfiles';
 
 export default function App() {
-  const [activePage, setActivePage] = useState('dashboard');
-  const [userName, setUserName] = useLocalStorage('acuity_username', () => {
+  // Navigation & Page State
+  const [loginMode, setLoginMode] = useState('signin');
+  const [activePage, setActivePage] = useState(() => {
     try {
-      const legacy = window.localStorage.getItem('smartstudy_username');
-      if (legacy) return JSON.parse(legacy);
+      const saved = window.localStorage.getItem('acuity_active_page');
+      if (saved) return JSON.parse(saved);
     } catch (e) {}
-    return 'Alex';
+    return 'landing'; // Starts on the new landing page by default
   });
+
+  // Persist active page
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('acuity_active_page', JSON.stringify(activePage));
+    } catch (e) {}
+  }, [activePage]);
+
+  // Extended Student Profile State
+  const [currentUser, setCurrentUser] = useLocalStorage('acuity_user_profile', () => {
+    try {
+      const saved = window.localStorage.getItem('acuity_user_profile');
+      if (saved) return JSON.parse(saved);
+
+      const legacyName =
+        window.localStorage.getItem('acuity_username') ||
+        window.localStorage.getItem('smartstudy_username');
+      if (legacyName) {
+        const parsedName = legacyName.startsWith('"') ? JSON.parse(legacyName) : legacyName;
+        return {
+          ...DEFAULT_USER,
+          name: parsedName || DEFAULT_USER.name,
+          isLoggedIn: true,
+        };
+      }
+    } catch (e) {}
+    return {
+      ...DEFAULT_USER,
+      isLoggedIn: true,
+    };
+  });
+
+  const [userName, setUserName] = useLocalStorage('acuity_username', () => {
+    return currentUser?.name || 'Alex Rivera';
+  });
+
   const [theme, setTheme] = useLocalStorage('acuity_theme', () => {
     try {
       const legacy = window.localStorage.getItem('smartstudy_theme');
@@ -74,6 +114,43 @@ export default function App() {
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  // Navigation router helper supporting options (e.g. login mode)
+  const handleNavigate = (page, options = {}) => {
+    if (options.mode) {
+      setLoginMode(options.mode);
+    }
+    setActivePage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Authentication Handlers
+  const handleLoginSuccess = (profile) => {
+    const updated = { ...profile, isLoggedIn: true };
+    setCurrentUser(updated);
+    setUserName(updated.name);
+    showToast(`Welcome back, ${updated.name.split(' ')[0]}! 🎓`, 'success');
+    setActivePage('dashboard');
+  };
+
+  const handleLogout = () => {
+    setCurrentUser((prev) => ({ ...(prev || DEFAULT_USER), isLoggedIn: false }));
+    showToast('Signed out of Acuity', 'info');
+    setActivePage('landing');
+  };
+
+  const handleSwitchProfile = (profile) => {
+    const updated = { ...profile, isLoggedIn: true };
+    setCurrentUser(updated);
+    setUserName(updated.name);
+    showToast(`Active persona: ${profile.name} (${profile.major})`, 'success');
+  };
+
+  const handleUpdateUserProfile = (updatedProfile) => {
+    setCurrentUser(updatedProfile);
+    setUserName(updatedProfile.name);
+    showToast('Academic profile updated successfully', 'success');
   };
 
   // Calculate quick badge indicators
@@ -160,41 +237,79 @@ export default function App() {
       case 'progress':
         return 'Progress & Insights';
       case 'settings':
-        return 'Settings & Preferences';
+        return 'Settings & Personalization';
       default:
         return 'Acuity';
     }
   };
 
+  // 1. Render Landing Page
+  if (activePage === 'landing') {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+        <Landing
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onNavigate={handleNavigate}
+          onQuickDemoLogin={handleLoginSuccess}
+          currentUser={currentUser?.isLoggedIn ? currentUser : null}
+        />
+        <Toast toast={toast} onClose={() => setToast(null)} />
+      </div>
+    );
+  }
+
+  // 2. Render Login & Personalization Page
+  if (activePage === 'login') {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+        <Login
+          initialMode={loginMode}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onLoginSuccess={handleLoginSuccess}
+          onNavigate={handleNavigate}
+        />
+        <Toast toast={toast} onClose={() => setToast(null)} />
+      </div>
+    );
+  }
+
+  // 3. Render Main Study Planner Workspace
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col md:flex-row transition-colors">
       {/* Desktop & Tablet Sidebar */}
       <Sidebar
         activePage={activePage}
-        onNavigate={setActivePage}
+        onNavigate={handleNavigate}
         pendingCount={pendingCount}
         urgentRecCount={urgentRecCount}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 pb-20 md:pb-8">
         {/* Responsive Header */}
         <Header
-          userName={userName}
+          userName={currentUser?.name || userName}
+          currentUser={currentUser}
           theme={theme}
           onToggleTheme={toggleTheme}
           onOpenAddTask={handleOpenAddTask}
           onOpenMobileMenu={() => setIsMobileDrawerOpen(true)}
+          onNavigate={handleNavigate}
           activePageTitle={getPageTitle()}
         />
 
-        {/* Active Page View */}
+        {/* Active Workspace View */}
         <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
           {activePage === 'dashboard' && (
             <Dashboard
               tasks={tasks}
-              userName={userName}
-              onNavigate={setActivePage}
+              userName={currentUser?.name || userName}
+              currentUser={currentUser}
+              onNavigate={handleNavigate}
               onOpenAddTask={handleOpenAddTask}
               onToggleComplete={handleToggleComplete}
               onEditTask={handleOpenEditTask}
@@ -231,8 +346,8 @@ export default function App() {
           {activePage === 'recommendations' && (
             <Recommendations
               tasks={tasks}
-              userName={userName}
-              onNavigate={setActivePage}
+              userName={currentUser?.name || userName}
+              onNavigate={handleNavigate}
               onOpenAddTask={handleOpenAddTask}
               onStartStudy={handleStartStudy}
             />
@@ -242,15 +357,19 @@ export default function App() {
             <Progress
               tasks={tasks}
               isDark={theme === 'dark'}
-              onNavigate={setActivePage}
+              onNavigate={handleNavigate}
               onOpenAddTask={handleOpenAddTask}
             />
           )}
 
           {activePage === 'settings' && (
             <Settings
-              userName={userName}
+              userName={currentUser?.name || userName}
+              currentUser={currentUser}
               onUpdateUserName={setUserName}
+              onUpdateUserProfile={handleUpdateUserProfile}
+              onLogout={handleLogout}
+              onSwitchProfile={handleSwitchProfile}
               theme={theme}
               onToggleTheme={toggleTheme}
               onClearAllTasks={handleClearAll}
@@ -261,14 +380,16 @@ export default function App() {
         </main>
       </div>
 
-      {/* Mobile Navigation (Bottom bar & Drawer) */}
+      {/* Mobile Navigation (Bottom bar & Slide-out Drawer) */}
       <MobileNavigation
         activePage={activePage}
-        onNavigate={setActivePage}
+        onNavigate={handleNavigate}
         isDrawerOpen={isMobileDrawerOpen}
         onCloseDrawer={() => setIsMobileDrawerOpen(false)}
         pendingCount={pendingCount}
         urgentRecCount={urgentRecCount}
+        currentUser={currentUser}
+        onLogout={handleLogout}
       />
 
       {/* Task Creation & Editing Modal */}
